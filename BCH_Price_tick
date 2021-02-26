@@ -1,0 +1,36 @@
+import requests
+import json
+#import datetime
+from datetime import datetime
+
+
+response = requests.get("https://api.blockchain.com/v3/exchange/tickers/BCH-USD")
+
+exchange_data = json.loads(response.text)
+exchange_data['timestamp'] = str(datetime.now())
+
+exchange_data = {key: exchange_data[key] for key in exchange_data.keys() 
+                               & {'timestamp', 'last_trade_price'}} 
+ 
+#=============================================================================================================================
+import azure.cosmos.cosmos_client as cosmos_client
+import azure.cosmos.exceptions as exceptions
+from azure.cosmos.partition_key import PartitionKey
+import json
+
+
+client = cosmos_client.CosmosClient("https://trade-parser.documents.azure.com:443/","{APIkey==}")
+db = client.create_database_if_not_exists(id= "BCHrealtimePrice")
+
+container = db.create_container_if_not_exists(id="TickpriceAPI_BCH",partition_key=PartitionKey(path ='/date',kind ='Hash'))
+
+
+# load data to nosql
+
+# create a dictionary for the selected row
+#data_dict = dict(data_load.iloc[i,:])
+# convert the dictionary to a json object.
+exchange_data = json.dumps(exchange_data, default =str)
+#item = container.read_item(json.loads(data_dict),partition_key = '/date')
+updated_item = container.upsert_item(json.loads(exchange_data))
+updated_item
